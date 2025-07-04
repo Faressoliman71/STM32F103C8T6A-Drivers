@@ -1,32 +1,29 @@
-/************************************
-File name : rcc.c
-Author : Fares Soliman
-Date : 2 April 2025
-*************************************/
+/******************************************************************************
+*  File name:		rcc.c
+*  Date:			Mar 7, 2025
+*******************************************************************************/
 
-/****************inclusions**********/
-
+/*******************************************************************************
+*                        		Inclusions                                     *
+*******************************************************************************/
 #include "stm32f103xx.h"
 #include "rcc.h"
-
-/************************************/
-
 
 /*******************************************************************************
 *                           Local Definitions                                  *
 *******************************************************************************/
 #define MAX_TIMEOUT                         100000
 
+/*******************************************************************************
+*                        		Clock Source	                               *
+*******************************************************************************/
+#define RCC_u8_HSI	1
+#define RCC_u8_HSE	2
+#define RCC_u8_PLL	3
 
-/*********************** clock sources ****************************************/
-
-#define RCC_u8_HSI      1
-#define RCC_u8_HSE      2
-#define RCC_u8_PLL      3
-
-
-/**************************  PLL Clock source **********************************/
-
+/*******************************************************************************
+*                        		PLL Clock Source	                           *
+*******************************************************************************/
 #define RCC_u8_PLL_HSI_DIVIDED_BY_2			1
 #define RCC_u8_PLL_HSE						2
 #define RCC_u8_PLL_HSE_DIVIDED_BY_2			3
@@ -49,7 +46,7 @@ Date : 2 April 2025
 #define RCC_u8_PLL_MULTIPLY_BY_14			0b1100
 #define RCC_u8_PLL_MULTIPLY_BY_15			0b1101
 #define RCC_u8_PLL_MULTIPLY_BY_16			0b1110
-/******************************************************************/
+
 /*******************************************************************************
 *                        		HSE Clock Source	                           *
 *******************************************************************************/
@@ -86,28 +83,24 @@ Date : 2 April 2025
 #define RCC_u8_AHB_DIVIDED_BY_256					0b1110
 #define RCC_u8_AHB_DIVIDED_BY_512					0b1111
 
-/*******************************************************************************/
-/******************************** Static configurations ************************
-
-             Select The system clock :
-                 1- RCC_u8_HSE
-                 2- RCC_u8_HSI
-                 3- RCC_u8_PLL
-
+/*******************************************************************************
+*                           Static Configurations                              *
 *******************************************************************************/
+/*******************************************************************************
+*                      Configure the system clock
+*                      1- RCC_u8_HSI
+*                      2- RCC_u8_HSE
+*                      3- RCC_u8_PLL
+*******************************************************************************/
+#define RCC_u8_CLK_SYS			RCC_u8_HSE
 
-#define    RCC_u8_CLK_SYS                RCC_u8_HSE
-
-/******************************************************************************
-
-
-               configure the PLL CLK Source :
-                 1- RCC_u8_HSE
-                 2- RCC_u8_HSE_2
-                 3- RCC_u8_HSI_2
-
-
-                 Configure the PLL MULT Factor :
+/*******************************************************************************
+*                      Configure the PLL clock source
+*                       1- RCC_u8_PLL_HSI_DIVIDED_BY_2
+*                       2- RCC_u8_PLL_HSE
+*                       3- RCC_u8_PLL_HSE_DIVIDED_BY_2
+*
+*                      Configure the HSE clock source
 *                       1-  RCC_u8_PLL_MULTIPLY_BY_2
 *                       2-  RCC_u8_PLL_MULTIPLY_BY_3
 *                       3-  RCC_u8_PLL_MULTIPLY_BY_4
@@ -123,38 +116,26 @@ Date : 2 April 2025
 *						13- RCC_u8_PLL_MULTIPLY_BY_14
 *						14- RCC_u8_PLL_MULTIPLY_BY_15
 *						15- RCC_u8_PLL_MULTIPLY_BY_16
-
-***************************************************************************/
-
-#if ( RCC_u8_CLK_SYS == RCC_u8_PLL )
-#define RCC_u8_PLL_SOURCE           RCC_u8_PLL_HSE_DIVIDED_BY_2
-#define RCC_u8_PLL_MULTIPLIER       RCC_u8_PLL_MULTIPLY_BY_2
+*******************************************************************************/
+#if (RCC_u8_CLK_SYS == RCC_u8_PLL)
+	#define RCC_u8_PLL_SOURCE			RCC_u8_PLL_HSI_DIVIDED_BY_2
+	#define RCC_u8_PLL_MULTIPLIER		RCC_u8_PLL_MULTIPLY_BY_2
 #endif
 
-
-/**************************************************************************
-***************************** configure the HSE CLK source ****************
-
-                   configure HSE clock SOurce :
-
-                   1- RCC_u8_HSE_NOT_BYPASS
-                   2- RCC_u8_HSE_BYPASS
-
-
-**************************************************************************/
-
-#if( RCC_u8_CLK_SYS == RCC_u8_HSE )
-
-#define RCC_u8_HSE_TYPE  RCC_u8_HSE_NOT_BYPASS
-
+/*******************************************************************************
+*                      Configure the HSE clock source
+*                       1- RCC_u8_HSE_NOT_BYPASS
+*                       2- RCC_u8_HSE_BYPASS
+*******************************************************************************/
+#if (RCC_u8_CLK_SYS == RCC_u8_HSE)
+	#define RCC_u8_HSE_TYPE			RCC_u8_HSE_NOT_BYPASS
 #endif
 
-
-/***********************************************************************
-************ The trim value of HSI , any value between 0~31
-               the default is 16
-**********************************************************************/
-
+/*******************************************************************************
+*                      The Trim Value of HSI
+*                      Any value between 0~31
+*                      Default = 16
+*******************************************************************************/
 #define RCC_u8_HSI_TRIM				16
 
 /*******************************************************************************
@@ -164,8 +145,6 @@ Date : 2 April 2025
 *						3- RCC_u8_ADC_DIVIDED_BY_6
 *						4- RCC_u8_ADC_DIVIDED_BY_8
 *******************************************************************************/
-
-
 #define RCC_u8_ADC_PRESCALER				RCC_u8_ADC_DIVIDED_BY_2
 
 /*******************************************************************************
@@ -198,30 +177,26 @@ Date : 2 April 2025
 * Function Name:        rcc_init_system_clock
 * Description:          Function to init the system clock source
 * Parameters (in):      void
-* Parameters (out):     s32
+* Parameters (out):     u8
 * Return value:         SUCCESS or ERROR
 ********************************************************************************/
-
-s32 rcc_init_system_clock (void)
+s32 rcc_init_system_clock(void)
 {
- s32 s32_return = SUCCESS ;
- u32 u32_time_out = 0 ;
+	s32 s32_return = SUCCESS;
+	u32 u32_timeout = 0;
 
-
-
- RCC->CR = (RCC->CR &~ (0b11111)<<3) | (RCC_u8_HSI_TRIM) << 3); /* Setting Trim Value */
-
-
-
-do {
-    #if (RCC_u8_CLK_SYS == RCC_u8_HSI)
+	RCC->CR = (RCC->CR &~ (0b11111<<3)) | (RCC_u8_HSI_TRIM << 3); /* Setting the TRIM value for HSI */
+    
+    do
+    {
+        #if (RCC_u8_CLK_SYS == RCC_u8_HSI)
             SET_BIT(RCC->CR, 0); /* write one bit no0 HSION to enable it*/
             /* wait until HSI RDY flag = 1 or timeout occurs*/
             while((GET_BIT(RCC->CR,1) == 0) && (u32_timeout < MAX_TIMEOUT))
             {
                 u32_timeout++;
             }
-
+        
             if(u32_timeout > MAX_TIMEOUT)
             {
                 s32_return = ERROR_TIMEOUT;
@@ -238,7 +213,7 @@ do {
             #else
                 #error "Wrong System Clock Choice"
             #endif
-
+            
             SET_BIT(RCC->CR, 16); /* write one bit no16 HSEON */
 
             /* wait until HSE RDY flag = 1  or timeout occurs */
@@ -246,7 +221,7 @@ do {
             {
                 u32_timeout++;
             }
-
+            
             if(u32_timeout > MAX_TIMEOUT)
             {
                 s32_return = ERROR_TIMEOUT;
@@ -286,7 +261,7 @@ do {
             {
                 u32_timeout++;
             }
-
+            
             if(u32_timeout > MAX_TIMEOUT)
             {
                 s32_return = ERROR_TIMEOUT;
@@ -303,15 +278,11 @@ do {
         RCC->CFGR = (RCC->CFGR &~ (0b111 << 11)) | (RCC_u8_APB2_PRESCALER << 11); /* APB2 */
         RCC->CFGR = (RCC->CFGR &~ (0b111 << 8))  | (RCC_u8_APB1_PRESCALER << 8);  /* APB1 */
         RCC->CFGR = (RCC->CFGR &~ (0b1111 << 4)) | (RCC_u8_AHB_PRESCALER << 4);   /* AHB */
-
-
-
-
-
-
-}while(0);
-return s32_return;
+    }while(0);
+    
+	return s32_return;
 }
+
 /*******************************************************************************
 * Function Name:        rcc_enable_disable_peripheral
 * Description:          Function to enable or disable clock for specific periphral
@@ -319,14 +290,10 @@ return s32_return;
 * Parameters (out):     s32
 * Return value:         SUCCESS or ERROR
 ********************************************************************************/
-s32 rcc_enable_disable_peripheral (u8 u8_peripheral, bool b_state)
+s32 rcc_enable_disable_peripheral(u8 u8_peripheral, bool b_state)
 {
-
-
-
-
-s32 s32_return = SUCCESS;
-
+	s32 s32_return = SUCCESS;
+    
     if((u8_peripheral < RCC_INVALID_PERIPHERAL) && (b_state <= TRUE))
     {
         if(u8_peripheral < RCC_APB2_OFFSET) /* from 0 to 31 AHB BUS */
@@ -348,9 +315,6 @@ s32 s32_return = SUCCESS;
     {
         s32_return = ERROR_INVALID_ARGUMENTS; /* user entered wrong peripheral number */
     }
-
+    
 	return s32_return;
-
-
-
 }
